@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Sheep Letter</title>
+<title>Sheep Letter - Phương Béo</title>
 
 <style>
 body {
@@ -13,22 +13,24 @@ body {
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #f5ede0, #faf3e8, #ede8d8);
-  font-family: Georgia, serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   overflow: hidden;
 }
 
+h2 { color: #8b7355; margin-bottom: 10px; }
+#hint { color: #a68b6d; font-style: italic; }
+
 /* Envelope */
 .envelope {
-  width: 320px;
-  height: 210px;
+  width: 280px;
+  height: 180px;
   position: relative;
   cursor: pointer;
-  transition: 0.2s;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 10;
 }
 
-.envelope:hover {
-  transform: scale(1.05);
-}
+.envelope:hover { transform: scale(1.1); }
 
 .body {
   position: absolute;
@@ -36,51 +38,65 @@ body {
   height: 100%;
   background: linear-gradient(160deg, #f0dfc0, #e8d0a5);
   border: 2px solid #c9a870;
-  border-radius: 16px;
+  border-radius: 12px;
+  z-index: 2;
 }
 
 .flap {
   position: absolute;
   top: 0;
   width: 100%;
-  height: 105px;
+  height: 90px;
   background: #e4c98e;
   clip-path: polygon(0 0, 100% 0, 50% 100%);
   border-bottom: 2px solid #c9a870;
+  z-index: 3;
+  transition: transform 0.4s ease;
+  transform-origin: top;
+}
+
+.envelope.open .flap {
+  transform: rotateX(180deg);
+  z-index: 1;
 }
 
 /* Letter */
 .letter {
   position: absolute;
   left: 50%;
-  bottom: 20px;
+  bottom: 10px;
   transform: translateX(-50%);
-  width: 220px;
-  height: 140px;
+  width: 200px;
+  height: 120px;
   background: #fff9f0;
   border: 1px solid #ddc89a;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  animation: fadeOut 1s forwards;
+  font-size: 20px;
+  z-index: 1;
+  transition: transform 0.8s ease, opacity 0.5s;
+}
+
+.envelope.open .letter {
+  transform: translate(-50%, -100px);
+  opacity: 0;
 }
 
 /* Sheep */
 .sheep {
   position: absolute;
-  font-size: 2.5rem;
-  animation: jump 1s infinite ease-in-out;
+  font-size: 1.2rem; /* Nhỏ lại một chút để xếp chữ nét hơn */
+  transition: all 2s cubic-bezier(0.19, 1, 0.22, 1);
+  user-select: none;
+  pointer-events: none;
+  z-index: 5;
 }
 
-@keyframes jump {
-  0%,100% { transform: translateY(0); }
-  50% { transform: translateY(-30px); }
-}
-
-@keyframes fadeOut {
-  0% { opacity: 1; transform: translate(-50%,0); }
-  100% { opacity: 0; transform: translate(-50%,-80px); }
+/* Hiệu ứng nhảy nhẹ nhàng khi đã vào vị trí */
+@keyframes miniJump {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 
 </style>
@@ -89,9 +105,9 @@ body {
 <body>
 
 <h2>You've Got Mail</h2>
-<p id="hint">Click the envelope</p>
+<p id="hint">Chạm vào bao thư đi...</p>
 
-<div class="envelope" onclick="openEnvelope()">
+<div class="envelope" onclick="openEnvelope(this)">
   <div class="body"></div>
   <div class="flap"></div>
   <div id="letter" class="letter">🐑🐏🐑</div>
@@ -99,35 +115,88 @@ body {
 
 <div id="sheepContainer"></div>
 
+<canvas id="textCanvas" style="display:none;"></canvas>
+
 <script>
-
 let opened = false;
+const textToForm = "phương béo";
+const sheepCount = 250; // Tăng số lượng cừu để chữ rõ hơn
 
-function openEnvelope() {
+function openEnvelope(element) {
   if (opened) return;
   opened = true;
+  
+  element.classList.add('open');
+  document.getElementById("hint").innerText = "Đang lùa cừu xếp hàng...";
 
-  document.getElementById("hint").innerText = "🐑 Cừu đang tràn ra...";
+  const points = getTextPoints(textToForm);
+  const container = document.getElementById("sheepContainer");
 
-  // tạo cừu
-  for (let i = 0; i < 25; i++) {
-    let s = document.createElement("div");
+  // Tạo đàn cừu
+  for (let i = 0; i < sheepCount; i++) {
+    const s = document.createElement("div");
     s.className = "sheep";
     s.innerText = Math.random() > 0.5 ? "🐑" : "🐏";
+    
+    // Vị trí xuất phát ngẫu nhiên quanh bao thư
+    const startX = window.innerWidth / 2;
+    const startY = window.innerHeight / 2;
+    
+    s.style.left = startX + "px";
+    s.style.top = startY + "px";
+    container.appendChild(s);
 
-    s.style.left = Math.random() * 100 + "vw";
-    s.style.top = Math.random() * 100 + "vh";
-    s.style.animationDuration = (0.5 + Math.random()) + "s";
-
-    document.getElementById("sheepContainer").appendChild(s);
+    // Di chuyển cừu đến vị trí mục tiêu sau một khoảng delay nhỏ
+    setTimeout(() => {
+      const target = points[i % points.length];
+      // Thêm một chút độ lệch ngẫu nhiên để trông tự nhiên hơn
+      const offsetX = (Math.random() - 0.5) * 10;
+      const offsetY = (Math.random() - 0.5) * 10;
+      
+      s.style.left = (target.x + offsetX) + "px";
+      s.style.top = (target.y + offsetY) + "px";
+      
+      // Sau khi chạy xong thì cho nhảy nhẹ
+      s.style.animation = `miniJump ${0.5 + Math.random()}s infinite ease-in-out`;
+    }, 100 + (i * 5)); 
   }
-
-  // ẩn lá thư
-  setTimeout(() => {
-    document.getElementById("letter").style.display = "none";
-  }, 800);
 }
 
+function getTextPoints(text) {
+  const canvas = document.getElementById("textCanvas");
+  const ctx = canvas.getContext("2d");
+  
+  // Thiết lập kích thước canvas dựa trên màn hình
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  
+  // Vẽ chữ để lấy dữ liệu pixel
+  const fontSize = Math.min(window.innerWidth / 6, 120);
+  ctx.font = `bold ${fontSize}px Georgia`;
+  ctx.fillStyle = "black";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+  
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  const points = [];
+  
+  // Quét các pixel để tìm những nơi có chữ (pixel màu đen)
+  // Nhảy bước 10-12 pixel để không lấy quá nhiều điểm
+  const step = 10; 
+  for (let y = 0; y < canvas.height; y += step) {
+    for (let x = 0; x < canvas.width; x += step) {
+      const index = (y * canvas.width + x) * 4;
+      const alpha = imageData[index + 3];
+      if (alpha > 128) {
+        points.push({ x, y });
+      }
+    }
+  }
+  
+  // Trộn ngẫu nhiên danh sách điểm để cừu không chạy theo thứ tự cứng nhắc
+  return points.sort(() => Math.random() - 0.5);
+}
 </script>
 
 </body>
