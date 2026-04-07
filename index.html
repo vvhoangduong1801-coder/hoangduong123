@@ -9,51 +9,47 @@ body {
   margin: 0;
   height: 100vh;
   display: flex;
-  flex-direction: column; /* Xếp theo chiều dọc */
+  flex-direction: column;
   align-items: center;
   background: linear-gradient(135deg, #f5ede0, #faf3e8, #ede8d8);
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   overflow: hidden;
   position: relative;
 }
 
-/* Khu vực chứa tiêu đề ở trên cùng, không bị cừu che */
+/* Khu vực tiêu đề cố định ở trên */
 .header-zone {
   width: 100%;
-  padding-top: 30px;
-  height: 15vh; /* Chiếm 15% chiều cao màn hình */
+  padding: 20px 0;
+  height: 12vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 20; /* Luôn nằm trên đàn cừu */
-  background: rgba(250, 243, 232, 0.8); /* Nền mờ nhẹ để nổi bật chữ */
-  border-bottom: 1px solid #ddc89a;
+  z-index: 20;
+  background: rgba(250, 243, 232, 0.9);
+  border-bottom: 1px solid #e2d1b3;
 }
 
-h2 { color: #8d734a; margin: 0 0 5px 0; transition: opacity 0.5s; }
-#hint { color: #b5a381; margin: 0; transition: opacity 0.5s; font-style: italic;}
+h2 { color: #8d734a; margin: 0; font-size: 1.5rem; }
+#hint { color: #b5a381; margin-top: 5px; font-size: 0.9rem; }
 
-/* Envelope - Ban đầu nằm giữa màn hình */
+/* Bao thư */
 .envelope {
-  width: 280px;
-  height: 180px;
+  width: 260px;
+  height: 170px;
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   cursor: pointer;
-  transition: transform 0.3s, opacity 0.8s, top 0.8s;
+  transition: all 0.8s cubic-bezier(0.5, -0.5, 0.5, 1.5);
   z-index: 10;
 }
 
-.envelope:hover { transform: translate(-50%, -50%) scale(1.05); }
-
-/* Hiệu ứng bao thư rơi */
 .envelope.fall {
-  top: 120%; /* Rơi xuống hẳn khỏi màn hình */
+  top: 150%;
   opacity: 0;
-  pointer-events: none;
 }
 
 .body {
@@ -62,53 +58,45 @@ h2 { color: #8d734a; margin: 0 0 5px 0; transition: opacity 0.5s; }
   height: 100%;
   background: #f0dfc0;
   border: 2px solid #c9a870;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .flap {
   position: absolute;
   top: 0;
   width: 100%;
-  height: 90px;
+  height: 85px;
   background: #e4c98e;
   clip-path: polygon(0 0, 100% 0, 50% 100%);
   border-bottom: 2px solid #c9a870;
 }
 
-/* Sheep container - Chiếm phần còn lại của màn hình dưới header */
+/* Container cho cừu */
 #sheepContainer {
   width: 100vw;
-  height: 85vh;
+  height: 88vh;
   position: absolute;
   bottom: 0;
   left: 0;
-  overflow: hidden;
   z-index: 5;
 }
 
 .sheep {
   position: absolute;
-  /* Kích thước cừu nhỏ hơn để mật độ cao nhìn rõ chữ */
-  font-size: 1.0rem; 
-  transition: all 1.4s cubic-bezier(0.19, 1, 0.22, 1);
+  font-size: 1.2rem;
+  transition: all 1.5s cubic-bezier(0.19, 1, 0.22, 1);
   user-select: none;
   opacity: 0;
 }
 
 .jumping {
-  animation: jump 0.7s infinite ease-in-out;
-}
-
-/* Hiệu ứng đổ bóng nhẹ khi cừu về vị trí để chữ nét hơn */
-.sheep.formed {
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+  animation: jump 0.8s infinite ease-in-out;
 }
 
 @keyframes jump {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  50% { transform: translateY(-10px); }
 }
-
 </style>
 </head>
 
@@ -116,7 +104,7 @@ h2 { color: #8d734a; margin: 0 0 5px 0; transition: opacity 0.5s; }
 
 <div class="header-zone">
   <h2 id="title">Gửi Phương thân yêu 💌</h2>
-  <p id="hint">Mở thư để nhận điều bất ngờ...</p>
+  <p id="hint">Chạm vào bao thư để mở nhé</p>
 </div>
 
 <div class="envelope" id="envelope" onclick="openEnvelope()">
@@ -128,10 +116,7 @@ h2 { color: #8d734a; margin: 0 0 5px 0; transition: opacity 0.5s; }
 
 <script>
 let opened = false;
-
-// Cấu hình số lượng cừu
-const TOTAL_SHEEP = 600; // Số lượng lớn để chữ rõ nét
-const flock = [];
+const TOTAL_SHEEP = 250; // Số lượng cừu vừa phải
 
 function openEnvelope() {
   if (opened) return;
@@ -142,130 +127,81 @@ function openEnvelope() {
   const title = document.getElementById("title");
   const hint = document.getElementById("hint");
   
-  // 1. Bao thư rơi xuống và biến mất
   env.classList.add("fall");
-  hint.innerText = "🐑 Đang triệu hồi đàn cừu siêu cấp...";
+  hint.innerText = "🐑 Đợi một chút nha...";
 
-  // 2. Tạo Canvas ẩn để quét tọa độ chữ
-  const coords = generateTextCoordinates("PHƯƠNG", "BÉO", container.offsetWidth, container.offsetHeight);
+  // Lấy tọa độ chữ "Phương béo"
+  const coords = generateTextCoordinates("Phương béo", container.offsetWidth, container.offsetHeight);
 
   const startX = container.offsetWidth / 2;
   const startY = container.offsetHeight / 2;
 
-  // 3. Tạo cừu và thực hiện hiệu ứng
   for (let i = 0; i < TOTAL_SHEEP; i++) {
-    // Tạo cừu chậm rãi từng con một chút để thấy hiệu ứng tràn ra
     setTimeout(() => {
       const s = document.createElement("div");
       s.className = "sheep jumping";
-      s.innerText = Math.random() > 0.2 ? "🐑" : "🐏"; // Mostly white sheep
+      s.innerText = Math.random() > 0.3 ? "🐑" : "🐏";
       
-      // Bắt đầu từ vị trí bao thư (giữa container cừu)
       s.style.left = startX + "px";
       s.style.top = startY + "px";
-      
       container.appendChild(s);
-      flock.push(s);
 
-      // Nhịp 1: Cừu bay ra, tản ra vòng tròn lớn quanh tâm
+      // Nhịp 1: Chạy tản ra vòng tròn
       setTimeout(() => {
         const angle = Math.random() * Math.PI * 2;
-        // Bán kính lớn hơn để chạy vòng rộng hơn
-        const radius = Math.min(startX, startY) * 0.8 + Math.random() * 50; 
+        const radius = 200 + Math.random() * 100;
         s.style.opacity = "1";
         s.style.left = (startX + Math.cos(angle) * radius) + "px";
         s.style.top = (startY + Math.sin(angle) * radius) + "px";
       }, 50);
 
-      // Nhịp 2: Chạy về xếp thành chữ (Sử dụng tọa độ chính xác từ Canvas)
+      // Nhịp 2: Xếp thành chữ
       setTimeout(() => {
-        // Lấy một tọa độ ngẫu nhiên trong danh sách các điểm ảnh của chữ
         const pos = coords[Math.floor(Math.random() * coords.length)];
-        
         s.style.left = pos.x + "px";
         s.style.top = pos.y + "px";
         
-        // Thêm class formed để tạo shadow nhẹ giúp chữ nét
-        s.classList.add('formed');
-        
-        // Cừu cuối cùng về vị trí, cập nhật tiêu đề
         if(i === TOTAL_SHEEP - 1) {
             title.innerText = "🐑 Xong rồi nè! 🐏";
-            title.style.opacity = "1";
-            hint.innerText = "Dành riêng cho Phương Béo";
+            hint.innerText = "Dành riêng cho Phương béo";
         }
-      }, 1800); // Tăng thời gian đợi chạy vòng tròn
+      }, 1500);
       
-      s.style.animationDuration = (0.5 + Math.random() * 0.3) + "s";
-    }, i * 3); // Tạo nhanh hơn vì số lượng nhiều
+      s.style.animationDuration = (0.6 + Math.random() * 0.4) + "s";
+    }, i * 5);
   }
 }
 
-/**
- * Hàm sử dụng Canvas ẩn để vẽ chữ và quét lấy tọa độ các pixel của chữ.
- */
-function generateTextCoordinates(text1, text2, width, height) {
+function generateTextCoordinates(text, width, height) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    
     canvas.width = width;
     canvas.height = height;
 
-    // Vẽ nền trắng để quét điểm đen (chữ)
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, width, height);
 
-    // Cấu hình vẽ chữ
     ctx.fillStyle = "black";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-
-    // Phông chữ Courier New đậm, kích thước lớn
-    // Kích thước chữ dựa trên chiều rộng màn hình để responsive
-    const fontSizeMain = Math.min(width * 0.15, 120); 
-    const fontSizeSub = Math.min(width * 0.18, 150); 
     
-    // Vẽ "PHƯƠNG" (Dòng trên)
-    ctx.font = `bold ${fontSizeMain}px 'Courier New', Courier, monospace`;
-    // Đặt ở vị trí 35% chiều cao của vùng cừu
-    ctx.fillText(text1, width / 2, height * 0.35); 
+    // Tự động điều chỉnh cỡ chữ theo màn hình
+    const fontSize = Math.min(width * 0.12, 100);
+    ctx.font = `bold ${fontSize}px Arial`;
+    ctx.fillText(text, width / 2, height / 2);
 
-    // Vẽ "BÉO" (Dòng dưới)
-    ctx.font = `bold ${fontSizeSub}px 'Courier New', Courier, monospace`;
-    // Đặt ở vị trí 65% chiều cao vùng cừu
-    ctx.fillText(text2, width / 2, height * 0.65);
-
-    // Quét pixel data
     const imgData = ctx.getImageData(0, 0, width, height).data;
-    const validCoords = [];
-
-    // Bước quét (step): Quét mỗi 6 pixel để cân bằng giữa độ nét và số lượng cừu
-    // Nếu tăng step -> ít điểm ảnh hơn -> chữ thưa hơn. Giảm step -> quá nhiều điểm -> lag.
-    const step = 6; 
+    const points = [];
+    const step = 8; // Khoảng cách giữa các điểm (tăng để ít cừu hơn)
 
     for (let y = 0; y < height; y += step) {
         for (let x = 0; x < width; x += step) {
-            // imgData là mảng RGBA liên tục. Vị trí = (y * width + x) * 4
-            const index = (y * width + x) * 4;
-            const r = imgData[index]; // Chỉ cần kiểm tra kênh Red
-            
-            // Nếu màu đỏ < 128 (tức là màu tối/đen - là pixel của chữ), lưu tọa độ
-            if (r < 128) {
-                validCoords.push({ x, y });
+            if (imgData[(y * width + x) * 4] < 128) {
+                points.push({ x, y });
             }
         }
     }
-    
-    // Nếu số lượng cừu TOTAL_SHEEP lớn hơn số điểm ảnh quét được, 
-    // ta cần nhân bản tọa độ để đủ cừu.
-    if (validCoords.length < TOTAL_SHEEP) {
-        let originalLength = validCoords.length;
-        for (let i = 0; validCoords.length < TOTAL_SHEEP; i++) {
-            validCoords.push(validCoords[i % originalLength]);
-        }
-    }
-
-    return validCoords;
+    return points;
 }
 </script>
 
