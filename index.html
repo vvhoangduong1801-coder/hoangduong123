@@ -9,47 +9,51 @@ body {
   margin: 0;
   height: 100vh;
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* Xếp theo chiều dọc */
   align-items: center;
   background: linear-gradient(135deg, #f5ede0, #faf3e8, #ede8d8);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Courier New', Courier, monospace;
   overflow: hidden;
   position: relative;
 }
 
-/* Khu vực tiêu đề cố định ở trên */
+/* Khu vực chứa tiêu đề ở trên cùng, không bị cừu che */
 .header-zone {
   width: 100%;
-  padding: 20px 0;
-  height: 12vh;
+  padding-top: 30px;
+  height: 15vh; /* Chiếm 15% chiều cao màn hình */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 20;
-  background: rgba(250, 243, 232, 0.9);
-  border-bottom: 1px solid #e2d1b3;
+  z-index: 20; /* Luôn nằm trên đàn cừu */
+  background: rgba(250, 243, 232, 0.8); /* Nền mờ nhẹ để nổi bật chữ */
+  border-bottom: 1px solid #ddc89a;
 }
 
-h2 { color: #8d734a; margin: 0; font-size: 1.5rem; }
-#hint { color: #b5a381; margin-top: 5px; font-size: 0.9rem; }
+h2 { color: #8d734a; margin: 0 0 5px 0; transition: opacity 0.5s; }
+#hint { color: #b5a381; margin: 0; transition: opacity 0.5s; font-style: italic;}
 
-/* Bao thư */
+/* Envelope - Ban đầu nằm giữa màn hình */
 .envelope {
-  width: 260px;
-  height: 170px;
+  width: 280px;
+  height: 180px;
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   cursor: pointer;
-  transition: all 0.8s cubic-bezier(0.5, -0.5, 0.5, 1.5);
+  transition: transform 0.3s, opacity 0.8s, top 0.8s;
   z-index: 10;
 }
 
+.envelope:hover { transform: translate(-50%, -50%) scale(1.05); }
+
+/* Hiệu ứng bao thư rơi */
 .envelope.fall {
-  top: 150%;
+  top: 120%; /* Rơi xuống hẳn khỏi màn hình */
   opacity: 0;
+  pointer-events: none;
 }
 
 .body {
@@ -58,45 +62,53 @@ h2 { color: #8d734a; margin: 0; font-size: 1.5rem; }
   height: 100%;
   background: #f0dfc0;
   border: 2px solid #c9a870;
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 .flap {
   position: absolute;
   top: 0;
   width: 100%;
-  height: 85px;
+  height: 90px;
   background: #e4c98e;
   clip-path: polygon(0 0, 100% 0, 50% 100%);
   border-bottom: 2px solid #c9a870;
 }
 
-/* Container cho cừu */
+/* Sheep container - Chiếm phần còn lại của màn hình dưới header */
 #sheepContainer {
   width: 100vw;
-  height: 88vh;
+  height: 85vh;
   position: absolute;
   bottom: 0;
   left: 0;
+  overflow: hidden;
   z-index: 5;
 }
 
 .sheep {
   position: absolute;
-  font-size: 1.2rem;
-  transition: all 1.5s cubic-bezier(0.19, 1, 0.22, 1);
+  /* Kích thước cừu nhỏ hơn một chút để hình mèo sắc nét với ít cừu hơn */
+  font-size: 0.9rem; 
+  transition: all 1.4s cubic-bezier(0.19, 1, 0.22, 1);
   user-select: none;
   opacity: 0;
 }
 
 .jumping {
-  animation: jump 0.8s infinite ease-in-out;
+  animation: jump 0.7s infinite ease-in-out;
+}
+
+/* Hiệu ứng đổ bóng nhẹ khi cừu về vị trí để chữ nét hơn */
+.sheep.formed {
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
 }
 
 @keyframes jump {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  50% { transform: translateY(-8px); }
 }
+
 </style>
 </head>
 
@@ -104,7 +116,7 @@ h2 { color: #8d734a; margin: 0; font-size: 1.5rem; }
 
 <div class="header-zone">
   <h2 id="title">Gửi Phương thân yêu 💌</h2>
-  <p id="hint">Chạm vào bao thư để mở nhé</p>
+  <p id="hint">Mở thư để nhận điều bất ngờ...</p>
 </div>
 
 <div class="envelope" id="envelope" onclick="openEnvelope()">
@@ -116,7 +128,10 @@ h2 { color: #8d734a; margin: 0; font-size: 1.5rem; }
 
 <script>
 let opened = false;
-const TOTAL_SHEEP = 250; // Số lượng cừu vừa phải
+
+// MODIFIED: Cấu hình số lượng cừu ít lại một tí (200 con)
+const TOTAL_SHEEP = 200; 
+const flock = [];
 
 function openEnvelope() {
   if (opened) return;
@@ -127,81 +142,162 @@ function openEnvelope() {
   const title = document.getElementById("title");
   const hint = document.getElementById("hint");
   
+  // 1. Bao thư rơi xuống và biến mất
   env.classList.add("fall");
-  hint.innerText = "🐑 Đợi một chút nha...";
+  hint.innerText = "🐑 Đang triệu hồi đàn cừu, xếp hình nha...";
 
-  // Lấy tọa độ chữ "Phương béo"
-  const coords = generateTextCoordinates("Phương béo", container.offsetWidth, container.offsetHeight);
+  // MODIFIED: 2. Tạo Canvas ẩn để quét tọa độ hình con mèo
+  // Giờ đây vẽ hình con mèo thay vì chữ.
+  const coords = generateCatShapeCoordinates(container.offsetWidth, container.offsetHeight);
 
   const startX = container.offsetWidth / 2;
   const startY = container.offsetHeight / 2;
 
+  // 3. Tạo cừu và thực hiện hiệu ứng
   for (let i = 0; i < TOTAL_SHEEP; i++) {
+    // Tạo cừu chậm rãi từng con một chút để thấy hiệu ứng tràn ra
     setTimeout(() => {
       const s = document.createElement("div");
       s.className = "sheep jumping";
+      // Đa dạng cừu trắng/vàng
       s.innerText = Math.random() > 0.3 ? "🐑" : "🐏";
       
+      // Bắt đầu từ vị trí bao thư (giữa container cừu)
       s.style.left = startX + "px";
       s.style.top = startY + "px";
+      
       container.appendChild(s);
+      flock.push(s);
 
-      // Nhịp 1: Chạy tản ra vòng tròn
+      // Nhịp 1: Cừu bay ra, tản ra vòng tròn lớn quanh tâm
       setTimeout(() => {
         const angle = Math.random() * Math.PI * 2;
-        const radius = 200 + Math.random() * 100;
+        // Bán kính lớn hơn để chạy vòng rộng hơn
+        const radius = Math.min(startX, startY) * 0.75 + Math.random() * 50; 
         s.style.opacity = "1";
         s.style.left = (startX + Math.cos(angle) * radius) + "px";
         s.style.top = (startY + Math.sin(angle) * radius) + "px";
       }, 50);
 
-      // Nhịp 2: Xếp thành chữ
+      // MODIFIED: Nhịp 2: Chạy về xếp thành hình mèo (Sử dụng tọa độ chính xác từ Canvas)
       setTimeout(() => {
-        const pos = coords[Math.floor(Math.random() * coords.length)];
-        s.style.left = pos.x + "px";
-        s.style.top = pos.y + "px";
+        // Lấy một tọa độ ngẫu nhiên trong danh sách các điểm ảnh của hình mèo
+        if (coords.length > 0) {
+            const pos = coords[Math.floor(Math.random() * coords.length)];
+            
+            s.style.left = pos.x + "px";
+            s.style.top = pos.y + "px";
+            
+            // Thêm class formed để tạo shadow nhẹ giúp chữ nét
+            s.classList.add('formed');
+        } else {
+            // Fallback nếu không có điểm nào được quét (không nên xảy ra)
+            s.style.opacity = "0";
+        }
         
+        // Cừu cuối cùng về vị trí, cập nhật tiêu đề
         if(i === TOTAL_SHEEP - 1) {
             title.innerText = "🐑 Xong rồi nè! 🐏";
-            hint.innerText = "Dành riêng cho Phương béo";
+            title.style.opacity = "1";
+            hint.innerText = "Dành riêng cho Phương Béo 🐈"; // Thêm emoji con mèo vào hint
         }
-      }, 1500);
+      }, 1800); // Tăng thời gian đợi chạy vòng tròn
       
-      s.style.animationDuration = (0.6 + Math.random() * 0.4) + "s";
-    }, i * 5);
+      s.style.animationDuration = (0.5 + Math.random() * 0.3) + "s";
+    }, i * 3); // Tạo nhanh hơn vì số lượng nhiều
   }
 }
 
-function generateTextCoordinates(text, width, height) {
+/**
+ * NEW FUNCTION: Hàm sử dụng Canvas ẩn để vẽ hình con mèo và quét lấy tọa độ.
+ * Vẽ một silhouette con mèo đơn giản (đầu và tai).
+ */
+function generateCatShapeCoordinates(width, height) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
+    
     canvas.width = width;
     canvas.height = height;
 
+    // Vẽ nền trắng để quét điểm đen (hình mèo)
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, width, height);
 
-    ctx.fillStyle = "black";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    
-    // Tự động điều chỉnh cỡ chữ theo màn hình
-    const fontSize = Math.min(width * 0.12, 100);
-    ctx.font = `bold ${fontSize}px Arial`;
-    ctx.fillText(text, width / 2, height / 2);
+    const cX = width / 2;
+    const cY = height / 2;
+    // Base size on height for vertical centering
+    const catBaseHeight = Math.min(width, height) * 0.4;
+    const headWidth = catBaseHeight * 1.5;
+    const headHeight = catBaseHeight;
+    const earSize = catBaseHeight * 0.7;
 
+    ctx.fillStyle = "black";
+
+    // --- Draw Wide Cat Head Silhouette (Filled) ---
+
+    // Head (filled wide oval)
+    ctx.beginPath();
+    // Use ellipse if supported (modern browser context within canvas sampler)
+    if (ctx.ellipse) {
+        ctx.ellipse(cX, cY, headWidth/2, headHeight/2, 0, 0, Math.PI * 2);
+    } else {
+        // Fallback or simpler shape (wide rounded rectangle?)
+        ctx.fillRect(cX - headWidth/2, cY - headHeight/2, headWidth, headHeight);
+    }
+    ctx.fill();
+
+    // Ears (Triangles sitting on top of the head oval)
+    ctx.beginPath();
+    
+    // Left Ear Triangle
+    ctx.moveTo(cX - (headWidth/4), cY - headHeight/2); // base bottom
+    ctx.lineTo(cX - (headWidth/2), cY - headHeight/2); // base far left
+    ctx.lineTo(cX - (headWidth/2), cY - headHeight/2 - earSize); // tip top
+    ctx.fill();
+
+    // Right Ear Triangle (mirror)
+    ctx.beginPath();
+    ctx.moveTo(cX + (headWidth/4), cY - headHeight/2); // base bottom
+    ctx.lineTo(cX + (headWidth/2), cY - headHeight/2); // base far right
+    ctx.lineTo(cX + (headWidth/2), cY - headHeight/2 - earSize); // tip top
+    ctx.fill();
+
+    // Redraw a circle over bases of ears to make it single solid outline? No, filled drawing is solid blocks. Sampling step 6 handles edges. Just need recognizable shape.
+
+    // Quét pixel data
     const imgData = ctx.getImageData(0, 0, width, height).data;
-    const points = [];
-    const step = 8; // Khoảng cách giữa các điểm (tăng để ít cừu hơn)
+    const validCoords = [];
+
+    // MODIFIED STEP: Tăng bước quét một chút để giảm số lượng điểm, 
+    // làm hình mèo thưa hơn nhưng vẫn nhận diện được với ít cừu hơn.
+    const step = 6; 
 
     for (let y = 0; y < height; y += step) {
         for (let x = 0; x < width; x += step) {
-            if (imgData[(y * width + x) * 4] < 128) {
-                points.push({ x, y });
+            // imgData là mảng RGBA liên tục. Vị trí = (y * width + x) * 4
+            const index = (y * width + x) * 4;
+            const r = imgData[index]; // Chỉ cần kiểm tra kênh Red
+            
+            // Nếu màu đỏ < 128 (tức là màu tối/đen - là pixel của hình mèo), lưu tọa độ
+            if (r < 128) {
+                validCoords.push({ x, y });
             }
         }
     }
-    return points;
+    
+    // Nếu số lượng cừu TOTAL_SHEEP lớn hơn số điểm ảnh quét được, 
+    // ta cần nhân bản tọa độ để đủ cừu. (Với 200 con và hình mèo, có thể cần nhân bản hoặc lặp lại)
+    if (validCoords.length > 0 && validCoords.length < TOTAL_SHEEP) {
+        let originalLength = validCoords.length;
+        for (let i = 0; validCoords.length < TOTAL_SHEEP; i++) {
+            validCoords.push(validCoords[i % originalLength]);
+        }
+    } else if (validCoords.length > TOTAL_SHEEP) {
+        // Nếu quét được quá nhiều điểm, chỉ lấy TOTAL_SHEEP điểm ngẫu nhiên
+        // hoặc để openEnvelope tự lấy ngẫu nhiên (nó đang lấy ngẫu nhiên).
+    }
+
+    return validCoords;
 }
 </script>
 
