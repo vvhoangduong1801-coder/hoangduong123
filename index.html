@@ -273,6 +273,8 @@
 
   <input type="file" id="file-input" accept="image/*">
 
+  <div id="progress-text" style="font-size:13px;color:#777;text-align:center;margin-bottom:10px;display:none;letter-spacing:0.03em;">đợi tý nghen...</div>
+
   <div class="progress-bar" id="progress-bar">
     <div class="progress-fill" id="progress-fill"></div>
   </div>
@@ -359,6 +361,7 @@ const ctx = canvas.getContext('2d');
 const canvasWrap = document.getElementById('canvas-wrap');
 const progressBar = document.getElementById('progress-bar');
 const progressFill = document.getElementById('progress-fill');
+const progressText = document.getElementById('progress-text');
 const btnRow = document.getElementById('btn-row');
 const dotSizeSlider = document.getElementById('dot-size');
 
@@ -436,6 +439,7 @@ async function renderWithAnimation() {
 
   canvasWrap.classList.add('active');
   progressBar.style.display = 'block';
+  progressText.style.display = 'block';
   progressFill.style.width = '0%';
   btnRow.style.display = 'none';
 
@@ -447,7 +451,11 @@ async function renderWithAnimation() {
 
   await phase2_colorFall(pixels, cols, rows, cell, dotSize, w, h, GRAY);
 
+  await finalCelebration();
+  progressText.textContent = 'tada!';
+  await sleep(900);
   progressBar.style.display = 'none';
+  progressText.style.display = 'none';
   btnRow.style.display = 'flex';
   animating = false;
 }
@@ -464,7 +472,9 @@ async function phase1_reveal(pixels, cols, rows, cell, dotSize, w, h, gray) {
       ctx.fillStyle = gray;
       ctx.fill();
     }
-    progressFill.style.width = Math.round((row / totalRows) * 50) + '%';
+    const percent = Math.round((row / totalRows) * 50);
+    progressFill.style.width = percent + '%';
+    updateProgressText(percent);
     if (row % 3 === 0) await sleep(rowDelay);
   }
 }
@@ -491,7 +501,9 @@ async function phase2_colorFall(pixels, cols, rows, cell, dotSize, w, h, gray) {
       await sleep(Math.max(2, Math.round(350 / rows)));
     }
     done++;
-    progressFill.style.width = Math.round(50 + (done / total) * 50) + '%';
+    const percent = Math.round(50 + (done / total) * 50);
+    progressFill.style.width = percent + '%';
+    updateProgressText(percent);
   }
 
   const BATCH = 6;
@@ -500,6 +512,21 @@ async function phase2_colorFall(pixels, cols, rows, cell, dotSize, w, h, gray) {
     await Promise.all(batch.map(col => animateColumn(col)));
     await sleep(4);
   }
+}
+
+function updateProgressText(percent) {
+  if (percent >= 100) progressText.textContent = 'tada!';
+  else if (percent >= 90) progressText.textContent = 'thấy gì hiện ra chưa';
+  else if (percent >= 80) progressText.textContent = 'chuẩn bị đi';
+  else if (percent >= 70) progressText.textContent = 'đây đây tới rồi nèe';
+  else if (percent >= 65) progressText.textContent = 'sắp sắp';
+  else if (percent >= 60) progressText.textContent = 'sắp xong roài';
+  else if (percent >= 50) progressText.textContent = 'đợi tý nghen';
+}
+
+async function finalCelebration() {
+  progressText.textContent = 'tada!';
+  await sleep(300);
 }
 
 function downloadImg() {
