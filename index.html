@@ -248,32 +248,17 @@
 
 <div id="intro-screen">
   <div id="intro-grid"></div>
-  <div id="intro-title">dot matrix</div>
+  <div id="intro-title">tặng mai chuông</div>
 </div>
 
 <div id="app">
   <div class="top-bar">
-    <div class="logo">dot matrix</div>
+    <div class="logo">tào lao.ing</div>
     <div class="controls-row">
       <div class="ctrl-group">
         <label>Size</label>
         <input type="range" id="dot-size" min="2" max="20" value="7" step="1">
         <span class="ctrl-val" id="size-val">7</span>
-      </div>
-      <div class="ctrl-group">
-        <label>Gap</label>
-        <input type="range" id="dot-gap" min="0" max="8" value="2" step="1">
-        <span class="ctrl-val" id="gap-val">2</span>
-      </div>
-      <div class="ctrl-group">
-        <label>Mode</label>
-        <select id="color-mode">
-          <option value="color">Màu gốc</option>
-          <option value="bw">Đen trắng</option>
-          <option value="sepia">Sepia</option>
-          <option value="neon">Neon</option>
-          <option value="invert">Invert</option>
-        </select>
       </div>
     </div>
   </div>
@@ -376,13 +361,13 @@ const progressBar = document.getElementById('progress-bar');
 const progressFill = document.getElementById('progress-fill');
 const btnRow = document.getElementById('btn-row');
 const dotSizeSlider = document.getElementById('dot-size');
-const dotGapSlider = document.getElementById('dot-gap');
-const colorModeSelect = document.getElementById('color-mode');
+
+
 const sizeVal = document.getElementById('size-val');
-const gapVal = document.getElementById('gap-val');
+
 
 dotSizeSlider.oninput = () => { sizeVal.textContent = dotSizeSlider.value; };
-dotGapSlider.oninput = () => { gapVal.textContent = dotGapSlider.value; };
+
 
 uploadZone.onclick = () => fileInput.click();
 uploadZone.ondragover = e => { e.preventDefault(); uploadZone.classList.add('drag'); };
@@ -406,9 +391,9 @@ function loadFile(file) {
 
 function getPixelData() {
   const dotSize = parseInt(dotSizeSlider.value);
-  const gap = parseInt(dotGapSlider.value);
+  const gap = 0;
   const cell = dotSize + gap;
-  const mode = colorModeSelect.value;
+  const mode = 'color';
 
   const displayW = Math.min(srcImg.width, 820);
   const displayH = Math.round(srcImg.height * displayW / srcImg.width);
@@ -430,16 +415,6 @@ function getPixelData() {
       const a = data[idx+3];
       if (a < 10) { pixels.push({ x: col * cell + cell/2, y: row * cell + cell/2, r: 0, g: 0, b: 0, radius: 0, col, row }); continue; }
       const br = 0.299*r + 0.587*g + 0.114*b;
-      if (mode === 'bw') { r = g = b = br; }
-      else if (mode === 'sepia') {
-        const nr = Math.min(255, r*0.393+g*0.769+b*0.189);
-        const ng = Math.min(255, r*0.349+g*0.686+b*0.168);
-        const nb = Math.min(255, r*0.272+g*0.534+b*0.131);
-        r = nr; g = ng; b = nb;
-      } else if (mode === 'neon') {
-        const v = br / 255;
-        r = Math.round(v * 80); g = Math.round(50 + v * 200); b = Math.round(v * 255);
-      } else if (mode === 'invert') { r = 255-r; g = 255-g; b = 255-b; }
       const radius = (br / 255) * (dotSize / 2) * 0.95;
       pixels.push({ x: col * cell + cell/2, y: row * cell + cell/2, r: Math.round(r), g: Math.round(g), b: Math.round(b), radius, col, row });
     }
@@ -536,4 +511,3 @@ function downloadImg() {
 </script>
 </body>
 </html>
-
