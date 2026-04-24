@@ -1,1 +1,539 @@
 
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dot Matrix Art</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0a0a0a;
+    color: #fff;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  #intro-screen {
+    position: fixed;
+    inset: 0;
+    background: #0a0a0a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: opacity 0.8s ease;
+  }
+
+  #intro-grid {
+    display: grid;
+    gap: 4px;
+    margin-bottom: 40px;
+  }
+
+  .intro-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #1a1a1a;
+    transition: background 0.3s ease;
+  }
+
+  .intro-dot.lit {
+    background: #fff;
+  }
+
+  #intro-title {
+    font-size: 13px;
+    letter-spacing: 0.3em;
+    color: #444;
+    text-transform: uppercase;
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+
+  #app {
+    width: 100%;
+    max-width: 860px;
+    padding: 32px 20px 40px;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+
+  #app.visible { opacity: 1; }
+
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .logo {
+    font-size: 13px;
+    letter-spacing: 0.25em;
+    color: #555;
+    text-transform: uppercase;
+  }
+
+  .controls-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .ctrl-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #161616;
+    border: 0.5px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 6px 12px;
+  }
+
+  .ctrl-group label {
+    font-size: 11px;
+    color: #555;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .ctrl-group input[type=range] {
+    width: 80px;
+    height: 3px;
+    -webkit-appearance: none;
+    background: #2a2a2a;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .ctrl-group input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    cursor: pointer;
+  }
+
+  .ctrl-group select {
+    background: transparent;
+    border: none;
+    color: #ccc;
+    font-size: 12px;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .ctrl-group select option { background: #1a1a1a; }
+
+  .ctrl-val {
+    font-size: 12px;
+    color: #888;
+    min-width: 20px;
+    text-align: right;
+  }
+
+  .upload-zone {
+    border: 1px dashed #2a2a2a;
+    border-radius: 16px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #0f0f0f;
+    margin-bottom: 24px;
+  }
+
+  .upload-zone:hover, .upload-zone.drag { border-color: #555; background: #141414; }
+
+  .upload-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #1a1a1a;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .upload-icon svg { width: 20px; height: 20px; fill: none; stroke: #555; stroke-width: 1.5; }
+  .upload-title { font-size: 15px; color: #aaa; font-weight: 400; margin-bottom: 6px; }
+  .upload-sub { font-size: 12px; color: #444; }
+
+  #file-input { display: none; }
+
+  .canvas-wrap {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+    display: none;
+    margin-bottom: 24px;
+  }
+
+  .canvas-wrap.active { display: block; }
+
+  #dot-canvas {
+    display: block;
+    width: 100%;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 9px 20px;
+    border-radius: 9px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    letter-spacing: 0.03em;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border: 0.5px solid #2a2a2a;
+    color: #888;
+  }
+
+  .btn-ghost:hover { border-color: #444; color: #ccc; background: #141414; }
+
+  .btn-primary {
+    background: #fff;
+    border: none;
+    color: #000;
+    font-weight: 500;
+  }
+
+  .btn-primary:hover { background: #ddd; }
+
+  .progress-bar {
+    height: 2px;
+    background: #1a1a1a;
+    border-radius: 1px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    display: none;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: #fff;
+    width: 0%;
+    transition: width 0.1s linear;
+    border-radius: 1px;
+  }
+</style>
+</head>
+<body>
+
+<div id="intro-screen">
+  <div id="intro-grid"></div>
+  <div id="intro-title">dot matrix</div>
+</div>
+
+<div id="app">
+  <div class="top-bar">
+    <div class="logo">dot matrix</div>
+    <div class="controls-row">
+      <div class="ctrl-group">
+        <label>Size</label>
+        <input type="range" id="dot-size" min="2" max="20" value="7" step="1">
+        <span class="ctrl-val" id="size-val">7</span>
+      </div>
+      <div class="ctrl-group">
+        <label>Gap</label>
+        <input type="range" id="dot-gap" min="0" max="8" value="2" step="1">
+        <span class="ctrl-val" id="gap-val">2</span>
+      </div>
+      <div class="ctrl-group">
+        <label>Mode</label>
+        <select id="color-mode">
+          <option value="color">Màu gốc</option>
+          <option value="bw">Đen trắng</option>
+          <option value="sepia">Sepia</option>
+          <option value="neon">Neon</option>
+          <option value="invert">Invert</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="upload-zone" id="upload-zone">
+    <div class="upload-icon">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    </div>
+    <div class="upload-title">Kéo thả hoặc nhấn để chọn ảnh</div>
+    <div class="upload-sub">JPG · PNG · WebP · GIF</div>
+  </div>
+
+  <input type="file" id="file-input" accept="image/*">
+
+  <div class="progress-bar" id="progress-bar">
+    <div class="progress-fill" id="progress-fill"></div>
+  </div>
+
+  <div class="canvas-wrap" id="canvas-wrap">
+    <canvas id="dot-canvas"></canvas>
+  </div>
+
+  <div class="btn-row" id="btn-row" style="display:none">
+    <button class="btn btn-ghost" id="re-render-btn">Vẽ lại</button>
+    <button class="btn btn-primary" id="download-btn">Tải xuống PNG</button>
+  </div>
+</div>
+
+<script>
+const COLS = 40;
+const ROWS = 25;
+const DOT_COLORS = ['#ffffff','#cccccc','#888888','#444444','#222222'];
+
+let srcImg = null;
+let animating = false;
+let currentPixels = [];
+
+function buildIntroGrid() {
+  const grid = document.getElementById('intro-grid');
+  const cols = 28, rows = 14;
+  grid.style.gridTemplateColumns = `repeat(${cols}, 8px)`;
+  for (let i = 0; i < cols * rows; i++) {
+    const d = document.createElement('div');
+    d.className = 'intro-dot';
+    grid.appendChild(d);
+  }
+  return { dots: grid.querySelectorAll('.intro-dot'), cols, rows };
+}
+
+async function runIntro() {
+  const { dots, cols, rows } = buildIntroGrid();
+  const title = document.getElementById('intro-title');
+  const total = dots.length;
+
+  await sleep(200);
+
+  for (let row = 0; row < rows; row++) {
+    const rowDots = [];
+    for (let col = 0; col < cols; col++) rowDots.push(dots[row * cols + col]);
+
+    rowDots.forEach((d, i) => {
+      setTimeout(() => {
+        d.classList.add('lit');
+      }, i * 18);
+    });
+
+    await sleep(cols * 18 * 0.3);
+  }
+
+  await sleep(400);
+  title.style.opacity = '1';
+  await sleep(800);
+
+  const shuffled = [...dots].sort(() => Math.random() - 0.5);
+  for (let i = 0; i < shuffled.length; i++) {
+    setTimeout(() => shuffled[i].classList.remove('lit'), i * 4);
+  }
+
+  await sleep(shuffled.length * 4 + 400);
+
+  const introScreen = document.getElementById('intro-screen');
+  introScreen.style.opacity = '0';
+  await sleep(800);
+  introScreen.style.display = 'none';
+
+  const app = document.getElementById('app');
+  app.classList.add('visible');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+runIntro();
+
+const uploadZone = document.getElementById('upload-zone');
+const fileInput = document.getElementById('file-input');
+const canvas = document.getElementById('dot-canvas');
+const ctx = canvas.getContext('2d');
+const canvasWrap = document.getElementById('canvas-wrap');
+const progressBar = document.getElementById('progress-bar');
+const progressFill = document.getElementById('progress-fill');
+const btnRow = document.getElementById('btn-row');
+const dotSizeSlider = document.getElementById('dot-size');
+const dotGapSlider = document.getElementById('dot-gap');
+const colorModeSelect = document.getElementById('color-mode');
+const sizeVal = document.getElementById('size-val');
+const gapVal = document.getElementById('gap-val');
+
+dotSizeSlider.oninput = () => { sizeVal.textContent = dotSizeSlider.value; };
+dotGapSlider.oninput = () => { gapVal.textContent = dotGapSlider.value; };
+
+uploadZone.onclick = () => fileInput.click();
+uploadZone.ondragover = e => { e.preventDefault(); uploadZone.classList.add('drag'); };
+uploadZone.ondragleave = () => uploadZone.classList.remove('drag');
+uploadZone.ondrop = e => { e.preventDefault(); uploadZone.classList.remove('drag'); loadFile(e.dataTransfer.files[0]); };
+fileInput.onchange = e => loadFile(e.target.files[0]);
+
+document.getElementById('re-render-btn').onclick = () => { if (srcImg) renderWithAnimation(); };
+document.getElementById('download-btn').onclick = downloadImg;
+
+function loadFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => { srcImg = img; renderWithAnimation(); };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function getPixelData() {
+  const dotSize = parseInt(dotSizeSlider.value);
+  const gap = parseInt(dotGapSlider.value);
+  const cell = dotSize + gap;
+  const mode = colorModeSelect.value;
+
+  const displayW = Math.min(srcImg.width, 820);
+  const displayH = Math.round(srcImg.height * displayW / srcImg.width);
+
+  const cols = Math.floor(displayW / cell);
+  const rows = Math.floor(displayH / cell);
+
+  const tmp = document.createElement('canvas');
+  tmp.width = cols; tmp.height = rows;
+  const tc = tmp.getContext('2d');
+  tc.drawImage(srcImg, 0, 0, cols, rows);
+  const data = tc.getImageData(0, 0, cols, rows).data;
+
+  const pixels = [];
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const idx = (row * cols + col) * 4;
+      let r = data[idx], g = data[idx+1], b = data[idx+2];
+      const a = data[idx+3];
+      if (a < 10) { pixels.push({ x: col * cell + cell/2, y: row * cell + cell/2, r: 0, g: 0, b: 0, radius: 0, col, row }); continue; }
+      const br = 0.299*r + 0.587*g + 0.114*b;
+      if (mode === 'bw') { r = g = b = br; }
+      else if (mode === 'sepia') {
+        const nr = Math.min(255, r*0.393+g*0.769+b*0.189);
+        const ng = Math.min(255, r*0.349+g*0.686+b*0.168);
+        const nb = Math.min(255, r*0.272+g*0.534+b*0.131);
+        r = nr; g = ng; b = nb;
+      } else if (mode === 'neon') {
+        const v = br / 255;
+        r = Math.round(v * 80); g = Math.round(50 + v * 200); b = Math.round(v * 255);
+      } else if (mode === 'invert') { r = 255-r; g = 255-g; b = 255-b; }
+      const radius = (br / 255) * (dotSize / 2) * 0.95;
+      pixels.push({ x: col * cell + cell/2, y: row * cell + cell/2, r: Math.round(r), g: Math.round(g), b: Math.round(b), radius, col, row });
+    }
+  }
+  return { pixels, cols, rows, cell, dotSize, w: cols * cell, h: rows * cell };
+}
+
+async function renderWithAnimation() {
+  if (animating) return;
+  animating = true;
+
+  const { pixels, cols, rows, cell, dotSize, w, h } = getPixelData();
+  currentPixels = pixels;
+
+  canvas.width = w;
+  canvas.height = h;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, w, h);
+
+  canvasWrap.classList.add('active');
+  progressBar.style.display = 'block';
+  progressFill.style.width = '0%';
+  btnRow.style.display = 'none';
+
+  const GRAY = '#1e1e1e';
+
+  await phase1_reveal(pixels, cols, rows, cell, dotSize, w, h, GRAY);
+
+  await sleep(80);
+
+  await phase2_colorFall(pixels, cols, rows, cell, dotSize, w, h, GRAY);
+
+  progressBar.style.display = 'none';
+  btnRow.style.display = 'flex';
+  animating = false;
+}
+
+async function phase1_reveal(pixels, cols, rows, cell, dotSize, w, h, gray) {
+  const totalRows = rows;
+  const rowDelay = Math.max(8, Math.round(600 / totalRows));
+
+  for (let row = 0; row < totalRows; row++) {
+    const rowPixels = pixels.filter(p => p.row === row);
+    for (const p of rowPixels) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, dotSize / 2 * 0.85, 0, Math.PI * 2);
+      ctx.fillStyle = gray;
+      ctx.fill();
+    }
+    progressFill.style.width = Math.round((row / totalRows) * 50) + '%';
+    if (row % 3 === 0) await sleep(rowDelay);
+  }
+}
+
+async function phase2_colorFall(pixels, cols, rows, cell, dotSize, w, h, gray) {
+  const colored = new Set();
+  const colOrder = Array.from({ length: cols }, (_, i) => i).sort(() => Math.random() - 0.5);
+
+  let done = 0;
+  const total = cols;
+
+  async function animateColumn(col) {
+    for (let row = 0; row < rows; row++) {
+      const p = pixels[row * cols + col];
+      if (!p) continue;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius > 0 ? p.radius : dotSize / 2 * 0.85, 0, Math.PI * 2);
+      ctx.fillStyle = p.radius > 0
+        ? `rgb(${p.r},${p.g},${p.b})`
+        : '#050505';
+      ctx.fill();
+
+      await sleep(Math.max(2, Math.round(350 / rows)));
+    }
+    done++;
+    progressFill.style.width = Math.round(50 + (done / total) * 50) + '%';
+  }
+
+  const BATCH = 6;
+  for (let i = 0; i < colOrder.length; i += BATCH) {
+    const batch = colOrder.slice(i, i + BATCH);
+    await Promise.all(batch.map(col => animateColumn(col)));
+    await sleep(4);
+  }
+}
+
+function downloadImg() {
+  const link = document.createElement('a');
+  link.download = 'dot-matrix-art.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+</script>
+</body>
+</html>
+
